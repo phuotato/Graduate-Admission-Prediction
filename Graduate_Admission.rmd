@@ -1,0 +1,874 @@
+---
+jupyter:
+  colab:
+    collapsed_sections:
+    - Nf6MJLjo6GGP
+  kernelspec:
+    display_name: R
+    name: ir
+  language_info:
+    name: R
+  nbformat: 4
+  nbformat_minor: 0
+---
+
+::: {.cell .code execution_count="1" colab="{\"base_uri\":\"https://localhost:8080/\"}" id="rzyOb90-hhRW" outputId="269828c9-531c-465e-c711-c6b7f9789d04"}
+``` python
+install.packages("car")
+install.packages("moments")
+```
+
+::: {.output .stream .stderr}
+    Installing package into ‘/usr/local/lib/R/site-library’
+    (as ‘lib’ is unspecified)
+
+    also installing the dependencies ‘cowplot’, ‘Deriv’, ‘microbenchmark’, ‘numDeriv’, ‘doBy’, ‘SparseM’, ‘MatrixModels’, ‘minqa’, ‘nloptr’, ‘RcppEigen’, ‘carData’, ‘abind’, ‘pbkrtest’, ‘quantreg’, ‘lme4’
+
+
+    Installing package into ‘/usr/local/lib/R/site-library’
+    (as ‘lib’ is unspecified)
+:::
+:::
+
+::: {.cell .code execution_count="2" colab="{\"base_uri\":\"https://localhost:8080/\"}" id="v77A-icFlXnU" outputId="e2c954e6-38fc-4d0c-d7b0-07ade9c2979a"}
+``` python
+library(ggplot2)
+library(dplyr)
+library(moments)
+library(car)
+
+```
+
+::: {.output .stream .stderr}
+
+    Attaching package: ‘dplyr’
+
+
+    The following objects are masked from ‘package:stats’:
+
+        filter, lag
+
+
+    The following objects are masked from ‘package:base’:
+
+        intersect, setdiff, setequal, union
+
+
+    Loading required package: carData
+
+
+    Attaching package: ‘car’
+
+
+    The following object is masked from ‘package:dplyr’:
+
+        recode
+:::
+:::
+
+::: {.cell .code execution_count="3" colab="{\"base_uri\":\"https://localhost:8080/\"}" id="33Wd16rLlZzK" outputId="224043c5-a6c1-42f0-da43-8a8ed7e97e55"}
+``` python
+install.packages("corrplot")
+install.packages("lmtest")
+install.packages("faraway")
+install.packages("MASS")
+library(corrplot)
+library(lmtest)
+library(faraway)
+library(MASS)
+```
+
+::: {.output .stream .stderr}
+    Installing package into ‘/usr/local/lib/R/site-library’
+    (as ‘lib’ is unspecified)
+
+    Installing package into ‘/usr/local/lib/R/site-library’
+    (as ‘lib’ is unspecified)
+
+    also installing the dependency ‘zoo’
+
+
+    Installing package into ‘/usr/local/lib/R/site-library’
+    (as ‘lib’ is unspecified)
+
+    Installing package into ‘/usr/local/lib/R/site-library’
+    (as ‘lib’ is unspecified)
+
+    corrplot 0.94 loaded
+
+    Loading required package: zoo
+
+
+    Attaching package: ‘zoo’
+
+
+    The following objects are masked from ‘package:base’:
+
+        as.Date, as.Date.numeric
+
+
+
+    Attaching package: ‘faraway’
+
+
+    The following objects are masked from ‘package:car’:
+
+        logit, vif
+
+
+
+    Attaching package: ‘MASS’
+
+
+    The following object is masked from ‘package:dplyr’:
+
+        select
+:::
+:::
+
+::: {.cell .code execution_count="4" colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":303}" id="YaDECCJjj4DY" outputId="091116b0-f9ea-45ac-8ffe-d48235bbcef9"}
+``` python
+data <- read.csv('Admission_Predict.csv')
+head(data)
+dim(data)
+```
+
+::: {.output .display_data}
+
+A data.frame: 6 × 9
+
+| <!--/--> | Serial.No. &lt;int&gt; | GRE.Score &lt;int&gt; | TOEFL.Score &lt;int&gt; | University.Rating &lt;int&gt; | SOP &lt;dbl&gt; | LOR &lt;dbl&gt; | CGPA &lt;dbl&gt; | Research &lt;int&gt; | Chance.of.Admit &lt;dbl&gt; |
+|---|---|---|---|---|---|---|---|---|---|
+| 1 | 1 | 337 | 118 | 4 | 4.5 | 4.5 | 9.65 | 1 | 0.92 |
+| 2 | 2 | 324 | 107 | 4 | 4.0 | 4.5 | 8.87 | 1 | 0.76 |
+| 3 | 3 | 316 | 104 | 3 | 3.0 | 3.5 | 8.00 | 1 | 0.72 |
+| 4 | 4 | 322 | 110 | 3 | 3.5 | 2.5 | 8.67 | 1 | 0.80 |
+| 5 | 5 | 314 | 103 | 2 | 2.0 | 3.0 | 8.21 | 0 | 0.65 |
+| 6 | 6 | 330 | 115 | 5 | 4.5 | 3.0 | 9.34 | 1 | 0.90 |
+:::
+
+::: {.output .display_data}
+1. 400
+2. 9
+:::
+:::
+
+::: {.cell .code execution_count="5" colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":34}" id="fVGxddhmh6VG" outputId="a8b3db67-b706-4778-e879-c468c39f6f4f"}
+``` python
+colSums(is.na(data))
+data_clean <- na.omit(data)
+```
+
+::: {.output .display_data}
+Serial.No.
+:   0GRE.Score
+:   0TOEFL.Score
+:   0University.Rating
+:   0SOP
+:   0LOR
+:   0CGPA
+:   0Research
+:   0Chance.of.Admit
+:   0
+:::
+:::
+
+::: {.cell .code execution_count="6" colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":260}" id="aGH4AI2WkAlI" outputId="e93be3ee-501a-4355-ca5c-e826f63d4b68"}
+``` python
+
+data_clean$Research <- as.factor(data_clean$Research)
+summary(data_clean)
+```
+
+::: {.output .display_data}
+       Serial.No.      GRE.Score      TOEFL.Score    University.Rating
+     Min.   :  1.0   Min.   :290.0   Min.   : 92.0   Min.   :1.000    
+     1st Qu.:100.8   1st Qu.:308.0   1st Qu.:103.0   1st Qu.:2.000    
+     Median :200.5   Median :317.0   Median :107.0   Median :3.000    
+     Mean   :200.5   Mean   :316.8   Mean   :107.4   Mean   :3.087    
+     3rd Qu.:300.2   3rd Qu.:325.0   3rd Qu.:112.0   3rd Qu.:4.000    
+     Max.   :400.0   Max.   :340.0   Max.   :120.0   Max.   :5.000    
+          SOP           LOR             CGPA       Research Chance.of.Admit 
+     Min.   :1.0   Min.   :1.000   Min.   :6.800   0:181    Min.   :0.3400  
+     1st Qu.:2.5   1st Qu.:3.000   1st Qu.:8.170   1:219    1st Qu.:0.6400  
+     Median :3.5   Median :3.500   Median :8.610            Median :0.7300  
+     Mean   :3.4   Mean   :3.453   Mean   :8.599            Mean   :0.7244  
+     3rd Qu.:4.0   3rd Qu.:4.000   3rd Qu.:9.062            3rd Qu.:0.8300  
+     Max.   :5.0   Max.   :5.000   Max.   :9.920            Max.   :0.9700  
+:::
+:::
+
+::: {.cell .code execution_count="7" colab="{\"base_uri\":\"https://localhost:8080/\"}" id="kX9UMW1omQWV" outputId="5cdf68da-5d4f-45d6-863a-34e986baf409"}
+``` python
+attach(data_clean)
+str(data_clean)
+```
+
+::: {.output .stream .stdout}
+    'data.frame':	400 obs. of  9 variables:
+     $ Serial.No.       : int  1 2 3 4 5 6 7 8 9 10 ...
+     $ GRE.Score        : int  337 324 316 322 314 330 321 308 302 323 ...
+     $ TOEFL.Score      : int  118 107 104 110 103 115 109 101 102 108 ...
+     $ University.Rating: int  4 4 3 3 2 5 3 2 1 3 ...
+     $ SOP              : num  4.5 4 3 3.5 2 4.5 3 3 2 3.5 ...
+     $ LOR              : num  4.5 4.5 3.5 2.5 3 3 4 4 1.5 3 ...
+     $ CGPA             : num  9.65 8.87 8 8.67 8.21 9.34 8.2 7.9 8 8.6 ...
+     $ Research         : Factor w/ 2 levels "0","1": 2 2 2 2 1 2 2 1 1 1 ...
+     $ Chance.of.Admit  : num  0.92 0.76 0.72 0.8 0.65 0.9 0.75 0.68 0.5 0.45 ...
+:::
+:::
+
+::: {.cell .code execution_count="8" colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":437}" id="b0JKwIo1knb-" outputId="0a6c95c9-4303-4c70-c864-c07e70a02e1e"}
+``` python
+par(mfrow = c(2, 3), mar = c(4, 4, 2, 1))
+
+# Box plot for GRE.Score
+boxplot(data_clean$GRE.Score,
+        main = "Box Plot of GRE Scores",
+        ylab = "GRE Score",
+        col = "lightblue")
+
+# Box plot for TOEFL.Score
+boxplot(data_clean$TOEFL.Score,
+        main = "Box Plot of TOEFL Scores",
+        ylab = "TOEFL Score",
+        col = "lightgreen")
+
+# Box plot for University.Rating
+boxplot(data_clean$University.Rating,
+        main = "Box Plot of University Rating",
+        ylab = "University Rating",
+        col = "lightcoral")
+
+# Box plot for SOP
+boxplot(data_clean$SOP,
+        main = "Box Plot of SOP",
+        ylab = "Statement of Purpose (SOP)",
+        col = "lightgoldenrod")
+
+# Box plot for LOR
+boxplot(data_clean$LOR,
+        main = "Box Plot of LOR",
+        ylab = "Letter of Recommendation (LOR)",
+        col = "lightpink")
+
+# Box plot for CGPA
+boxplot(data_clean$CGPA,
+        main = "Box Plot of CGPA",
+        ylab = "CGPA",
+        col = "lightsteelblue")
+
+par(mfrow = c(1, 1))
+```
+
+::: {.output .display_data}
+![](vertopal_dd8673d3bf9c47689c155e4888b2c597/0d31637b14895a4ab99e6d8869ea5718ed700060.png){height="420"
+width="420"}
+:::
+:::
+
+::: {.cell .code execution_count="9" colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":260}" id="lDkmcuWVkny1" outputId="8399c97c-495b-427a-86cd-8bf0d9742672"}
+``` python
+remove_outliers <- function(df, cols) {
+  for (col in cols) {
+    Q1 <- quantile(df[[col]], 0.25)
+    Q3 <- quantile(df[[col]], 0.75)
+    IQR <- Q3 - Q1
+    lower_bound <- Q1 - 1.5 * IQR
+    upper_bound <- Q3 + 1.5 * IQR
+    df <- df %>% filter(df[[col]] >= lower_bound & df[[col]] <= upper_bound)
+  }
+  return(df)
+}
+
+quantitative_vars <- c("GRE.Score", "TOEFL.Score", "University.Rating", "SOP", "LOR", "CGPA", "Chance.of.Admit")
+data_clean <- remove_outliers(data_clean, quantitative_vars)
+
+summary(data_clean)
+```
+
+::: {.output .display_data}
+       Serial.No.      GRE.Score    TOEFL.Score    University.Rating
+     Min.   :  1.0   Min.   :290   Min.   : 92.0   Min.   :1.000    
+     1st Qu.:101.8   1st Qu.:309   1st Qu.:103.0   1st Qu.:2.000    
+     Median :200.5   Median :317   Median :107.0   Median :3.000    
+     Mean   :200.3   Mean   :317   Mean   :107.5   Mean   :3.104    
+     3rd Qu.:299.2   3rd Qu.:325   3rd Qu.:112.0   3rd Qu.:4.000    
+     Max.   :400.0   Max.   :340   Max.   :120.0   Max.   :5.000    
+          SOP             LOR             CGPA       Research Chance.of.Admit
+     Min.   :1.000   Min.   :1.500   Min.   :7.200   0:178    Min.   :0.360  
+     1st Qu.:2.500   1st Qu.:3.000   1st Qu.:8.195   1:218    1st Qu.:0.640  
+     Median :3.500   Median :3.500   Median :8.630            Median :0.730  
+     Mean   :3.408   Mean   :3.467   Mean   :8.611            Mean   :0.728  
+     3rd Qu.:4.000   3rd Qu.:4.000   3rd Qu.:9.072            3rd Qu.:0.830  
+     Max.   :5.000   Max.   :5.000   Max.   :9.920            Max.   :0.970  
+:::
+:::
+
+::: {.cell .code execution_count="10" colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":437}" id="cIJewuTF3hDX" outputId="af73541c-f276-45fb-b358-b4b321484a00"}
+``` python
+# Set up a 2x3 layout for multiple plots in one image
+par(mfrow = c(2, 3))
+
+# Histogram and density plot for GRE.Score
+hist(x = data_clean$GRE.Score, freq = FALSE,
+     xlim = c(min(data_clean$GRE.Score), max(data_clean$GRE.Score)),
+     breaks = 20, main = "Histogram of GRE Score",
+     xlab = "GRE Score", col = "lightskyblue1")
+lines(x = density(x = data_clean$GRE.Score), col = "red")
+
+# Histogram and density plot for TOEFL.Score
+hist(x = data_clean$TOEFL.Score, freq = FALSE,
+     xlim = c(min(data_clean$TOEFL.Score), max(data_clean$TOEFL.Score)),
+     breaks = 20, main = "Histogram of TOEFL Score",
+     xlab = "TOEFL Score", col = "lightskyblue1")
+lines(x = density(x = data_clean$TOEFL.Score), col = "red")
+
+# Histogram and density plot for CGPA
+hist(x = data_clean$CGPA, freq = FALSE,
+     xlim = c(min(data_clean$CGPA), max(data_clean$CGPA)),
+     breaks = 20, main = "Histogram of CGPA",
+     xlab = "CGPA", col = "lightskyblue1")
+lines(x = density(x = data_clean$CGPA), col = "red")
+
+# Histogram and density plot for University.Rating
+hist(x = data_clean$University.Rating, freq = FALSE,
+     xlim = c(min(data_clean$University.Rating), max(data_clean$University.Rating)),
+     breaks = 20, main = "Histogram of University Rating",
+     xlab = "University Rating", col = "lightskyblue1")
+lines(x = density(x = data_clean$University.Rating), col = "red")
+
+# Histogram and density plot for LOR
+hist(x = data_clean$LOR, freq = FALSE,
+     xlim = c(min(data_clean$LOR), max(data_clean$LOR)),
+     breaks = 20, main = "Histogram of LOR",
+     xlab = "LOR", col = "lightskyblue1")
+lines(x = density(x = data_clean$LOR), col = "red")
+
+# Reset the layout to default (optional)
+par(mfrow = c(1, 1))
+```
+
+::: {.output .display_data}
+![](vertopal_dd8673d3bf9c47689c155e4888b2c597/cdefd3e324329b0fd0703f6e4d44e93cc9ec580f.png){height="420"
+width="420"}
+:::
+:::
+
+::: {.cell .code execution_count="11" colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":437}" id="qcxcJX3t4ph9" outputId="f6f0c3b9-e445-4ccd-9147-243d35e9f929"}
+``` python
+research_counts <- table(data_clean$Research)
+
+research_percentages <- round(research_counts / sum(research_counts) * 100, 1)
+
+labels <- paste(names(research_counts), ": ", research_percentages, "%", sep = "")
+
+pie(
+  research_counts,
+  labels = labels,
+  main = "Distribution of Research Variable",
+  col = c("lightskyblue1", "lightcoral", "lightgreen", "lightgoldenrod1")
+)
+```
+
+::: {.output .display_data}
+![](vertopal_dd8673d3bf9c47689c155e4888b2c597/8584d06e0fc75381388f03a41aaf35df338b9389.png){height="420"
+width="420"}
+:::
+:::
+
+::: {.cell .code execution_count="12" id="pMNtmK1ZpGjT"}
+``` python
+set.seed(100)
+
+# Split the data into 80% training and 20% testing sets
+indexes <- sample(nrow(data), (0.80 * nrow(data)), replace = FALSE)
+trainData <- data[indexes, ]
+testData <- data[-indexes, ]
+```
+:::
+
+::: {.cell .code execution_count="13" colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":451}" id="ylKActmSpNuV" outputId="3de12a12-1f9a-45da-b2e2-a9380544c15a"}
+``` python
+
+model_full <- lm(Chance.of.Admit ~ GRE.Score + TOEFL.Score + University.Rating + SOP + LOR + CGPA + Research, data = trainData)
+summary(model_full)
+```
+
+::: {.output .display_data}
+
+    Call:
+    lm(formula = Chance.of.Admit ~ GRE.Score + TOEFL.Score + University.Rating + 
+        SOP + LOR + CGPA + Research, data = trainData)
+
+    Residuals:
+          Min        1Q    Median        3Q       Max 
+    -0.241613 -0.023589  0.008477  0.034834  0.150241 
+
+    Coefficients:
+                        Estimate Std. Error t value Pr(>|t|)    
+    (Intercept)       -1.3426740  0.1323573 -10.144  < 2e-16 ***
+    GRE.Score          0.0020801  0.0006429   3.235  0.00135 ** 
+    TOEFL.Score        0.0027798  0.0011608   2.395  0.01722 *  
+    University.Rating  0.0072008  0.0053757   1.340  0.18138    
+    SOP               -0.0005393  0.0062405  -0.086  0.93119    
+    LOR                0.0197461  0.0061008   3.237  0.00134 ** 
+    CGPA               0.1178112  0.0130777   9.009  < 2e-16 ***
+    Research           0.0164261  0.0086233   1.905  0.05772 .  
+    ---
+    Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+    Residual standard error: 0.06163 on 312 degrees of freedom
+    Multiple R-squared:  0.812,	Adjusted R-squared:  0.8078 
+    F-statistic: 192.6 on 7 and 312 DF,  p-value: < 2.2e-16
+:::
+:::
+
+::: {.cell .code execution_count="14" colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":52}" id="5_4egRFU0HuH" outputId="ceda39e1-f556-4edb-aeab-1b24a1266e7e"}
+``` python
+vif(model_full)
+```
+
+::: {.output .display_data}
+GRE.Score
+:   4.51652756958437TOEFL.Score
+:   3.98154776903724University.Rating
+:   3.01857864446158SOP
+:   3.08903411449851LOR
+:   2.42297194451301CGPA
+:   4.94948293967546Research
+:   1.51489095404752
+:::
+:::
+
+::: {.cell .code execution_count="15" colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":468}" id="qyn4RFZtA-ve" outputId="5c01c2df-3099-471d-e6c1-7b8802e7623c"}
+``` python
+model_red1 <- lm(Chance.of.Admit ~ GRE.Score + TOEFL.Score + University.Rating + SOP + LOR  + Research, data = trainData)
+summary(model_red1)
+vif(model_red1)
+```
+
+::: {.output .display_data}
+
+    Call:
+    lm(formula = Chance.of.Admit ~ GRE.Score + TOEFL.Score + University.Rating + 
+        SOP + LOR + Research, data = trainData)
+
+    Residuals:
+          Min        1Q    Median        3Q       Max 
+    -0.255881 -0.030697  0.009807  0.045801  0.163231 
+
+    Coefficients:
+                        Estimate Std. Error t value Pr(>|t|)    
+    (Intercept)       -1.4432861  0.1478106  -9.764  < 2e-16 ***
+    GRE.Score          0.0043518  0.0006628   6.565 2.16e-10 ***
+    TOEFL.Score        0.0055816  0.0012534   4.453 1.18e-05 ***
+    University.Rating  0.0181577  0.0058686   3.094  0.00215 ** 
+    SOP                0.0086283  0.0069005   1.250  0.21209    
+    LOR                0.0282181  0.0067557   4.177 3.84e-05 ***
+    Research           0.0156408  0.0096641   1.618  0.10657    
+    ---
+    Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+    Residual standard error: 0.06907 on 313 degrees of freedom
+    Multiple R-squared:  0.7632,	Adjusted R-squared:  0.7586 
+    F-statistic: 168.1 on 6 and 313 DF,  p-value: < 2.2e-16
+:::
+
+::: {.output .display_data}
+GRE.Score
+:   3.82176368996645TOEFL.Score
+:   3.69573336722524University.Rating
+:   2.86405405678303SOP
+:   3.0068907647209LOR
+:   2.36539633082481Research
+:   1.51473614764915
+:::
+:::
+
+::: {.cell .code execution_count="16" colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":451}" id="hWpyo_JPBq5h" outputId="991fdbaf-e202-4fa2-e166-5e482fd180bd"}
+``` python
+model_red2 <- lm(Chance.of.Admit ~  TOEFL.Score + University.Rating + SOP + LOR  + Research, data = trainData)
+summary(model_red2)
+vif(model_red2)
+```
+
+::: {.output .display_data}
+
+    Call:
+    lm(formula = Chance.of.Admit ~ TOEFL.Score + University.Rating + 
+        SOP + LOR + Research, data = trainData)
+
+    Residuals:
+          Min        1Q    Median        3Q       Max 
+    -0.294332 -0.033319  0.004896  0.049369  0.207853 
+
+    Coefficients:
+                       Estimate Std. Error t value Pr(>|t|)    
+    (Intercept)       -0.676717   0.096524  -7.011 1.46e-11 ***
+    TOEFL.Score        0.010937   0.001014  10.790  < 2e-16 ***
+    University.Rating  0.021735   0.006223   3.493 0.000546 ***
+    SOP                0.007853   0.007348   1.069 0.285996    
+    LOR                0.032979   0.007153   4.611 5.85e-06 ***
+    Research           0.036393   0.009726   3.742 0.000217 ***
+    ---
+    Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+    Residual standard error: 0.07355 on 314 degrees of freedom
+    Multiple R-squared:  0.7305,	Adjusted R-squared:  0.7263 
+    F-statistic: 170.3 on 5 and 314 DF,  p-value: < 2.2e-16
+:::
+
+::: {.output .display_data}
+TOEFL.Score
+:   2.13078288140037University.Rating
+:   2.83936135293398SOP
+:   3.00600971283235LOR
+:   2.33814831344064Research
+:   1.3527039610764
+:::
+:::
+
+::: {.cell .code execution_count="17" colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":416}" id="i4T5OSn1Byg8" outputId="78b0581a-dc3e-4ba3-8b72-2759ac46d3c7"}
+``` python
+model_red3 <- lm(Chance.of.Admit ~  TOEFL.Score + University.Rating + LOR  + Research, data = trainData)
+summary(model_red3)
+vif(model_red3)
+```
+
+::: {.output .display_data}
+
+    Call:
+    lm(formula = Chance.of.Admit ~ TOEFL.Score + University.Rating + 
+        LOR + Research, data = trainData)
+
+    Residuals:
+          Min        1Q    Median        3Q       Max 
+    -0.292829 -0.034032  0.005547  0.049044  0.206298 
+
+    Coefficients:
+                        Estimate Std. Error t value Pr(>|t|)    
+    (Intercept)       -0.6928013  0.0953653  -7.265 2.96e-12 ***
+    TOEFL.Score        0.0111573  0.0009925  11.241  < 2e-16 ***
+    University.Rating  0.0241266  0.0058078   4.154 4.21e-05 ***
+    LOR                0.0362775  0.0064540   5.621 4.19e-08 ***
+    Research           0.0371123  0.0097045   3.824 0.000158 ***
+    ---
+    Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+    Residual standard error: 0.07357 on 315 degrees of freedom
+    Multiple R-squared:  0.7296,	Adjusted R-squared:  0.7261 
+    F-statistic: 212.4 on 4 and 315 DF,  p-value: < 2.2e-16
+:::
+
+::: {.output .display_data}
+TOEFL.Score
+:   2.04234324659838University.Rating
+:   2.4722743955656LOR
+:   1.90274166497119Research
+:   1.34621773863977
+:::
+:::
+
+::: {.cell .code execution_count="18" colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":399}" id="aHk4THjTCMNV" outputId="e58f500f-bb46-4dbb-b27b-b2ae67cbb4f8"}
+``` python
+model_red4 <- lm(Chance.of.Admit ~  TOEFL.Score + LOR  + Research, data = trainData)
+summary(model_red4)
+vif(model_red4)
+```
+
+::: {.output .display_data}
+
+    Call:
+    lm(formula = Chance.of.Admit ~ TOEFL.Score + LOR + Research, 
+        data = trainData)
+
+    Residuals:
+          Min        1Q    Median        3Q       Max 
+    -0.296303 -0.034059  0.008456  0.055245  0.208123 
+
+    Coefficients:
+                  Estimate Std. Error t value Pr(>|t|)    
+    (Intercept) -0.8641813  0.0881640  -9.802  < 2e-16 ***
+    TOEFL.Score  0.0130184  0.0009081  14.335  < 2e-16 ***
+    LOR          0.0487272  0.0058612   8.313 2.79e-15 ***
+    Research     0.0422801  0.0098689   4.284 2.44e-05 ***
+    ---
+    Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+    Residual standard error: 0.07544 on 316 degrees of freedom
+    Multiple R-squared:  0.7147,	Adjusted R-squared:  0.712 
+    F-statistic: 263.9 on 3 and 316 DF,  p-value: < 2.2e-16
+:::
+
+::: {.output .display_data}
+TOEFL.Score
+:   1.62623284234586LOR
+:   1.49247307185952Research
+:   1.324096427304
+:::
+:::
+
+::: {.cell .code execution_count="19" colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":260}" id="6P58pORoGtuj" outputId="ee90ad73-503a-489a-c32e-f120375cfea3"}
+``` python
+car::vif(model_red4)
+car::durbinWatsonTest(model_red4)
+bptest(model_red4)
+shapiro.test(model_red4$residuals)
+```
+
+::: {.output .display_data}
+TOEFL.Score
+:   1.62623284234583LOR
+:   1.49247307185952Research
+:   1.324096427304
+:::
+
+::: {.output .display_data}
+     lag Autocorrelation D-W Statistic p-value
+       1     0.004344417      1.990565   0.916
+     Alternative hypothesis: rho != 0
+:::
+
+::: {.output .display_data}
+
+    	studentized Breusch-Pagan test
+
+    data:  model_red4
+    BP = 18.124, df = 3, p-value = 0.0004147
+:::
+
+::: {.output .display_data}
+
+    	Shapiro-Wilk normality test
+
+    data:  model_red4$residuals
+    W = 0.9503, p-value = 6.304e-09
+:::
+:::
+
+::: {.cell .code execution_count="20" colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":454}" id="gkL90a6eCkF7" outputId="da219f26-6035-46cc-cbf9-72c0aadd4fa2"}
+``` python
+box_cox_new = boxcox(model_red4, lambda = seq(-3,3))
+best_lam_new = box_cox_new$x[which(box_cox_new$y==max(box_cox_new$y))]
+best_lam_new
+```
+
+::: {.output .display_data}
+2.27272727272727
+:::
+
+::: {.output .display_data}
+![](vertopal_dd8673d3bf9c47689c155e4888b2c597/3d9d137e27c74240e1d006badab9e76ad9cd43b7.png){height="420"
+width="420"}
+:::
+:::
+
+::: {.cell .code execution_count="21" colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":381}" id="87vFu0E6C6CK" outputId="bd06ed67-f545-4f1e-b05a-045ebdd53b8a"}
+``` python
+# Fit the model using the best lambda from Box-Cox
+model_best <- lm((Chance.of.Admit)^(best_lam_new) ~  TOEFL.Score + LOR  + Research, data = trainData)
+summary(model_best)
+```
+
+::: {.output .display_data}
+
+    Call:
+    lm(formula = (Chance.of.Admit)^(best_lam_new) ~ TOEFL.Score + 
+        LOR + Research, data = trainData)
+
+    Residuals:
+         Min       1Q   Median       3Q      Max 
+    -0.38636 -0.05790  0.00899  0.07728  0.29266 
+
+    Coefficients:
+                 Estimate Std. Error t value Pr(>|t|)    
+    (Intercept) -1.928291   0.121865 -15.823  < 2e-16 ***
+    TOEFL.Score  0.020087   0.001255  16.002  < 2e-16 ***
+    LOR          0.070508   0.008102   8.703  < 2e-16 ***
+    Research     0.064760   0.013641   4.747 3.13e-06 ***
+    ---
+    Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+    Residual standard error: 0.1043 on 316 degrees of freedom
+    Multiple R-squared:  0.7505,	Adjusted R-squared:  0.7481 
+    F-statistic: 316.9 on 3 and 316 DF,  p-value: < 2.2e-16
+:::
+:::
+
+::: {.cell .code execution_count="22" colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":260}" id="_IcuewC-3_Ba" outputId="4562223c-94c4-4c39-c02d-4ea16b37ba66"}
+``` python
+car::vif(model_best)
+car::durbinWatsonTest(model_best)
+bptest(model_best)
+shapiro.test(model_best$residuals)
+```
+
+::: {.output .display_data}
+TOEFL.Score
+:   1.62623284234583LOR
+:   1.49247307185952Research
+:   1.324096427304
+:::
+
+::: {.output .display_data}
+     lag Autocorrelation D-W Statistic p-value
+       1      -0.0184738      2.034658   0.768
+     Alternative hypothesis: rho != 0
+:::
+
+::: {.output .display_data}
+
+    	studentized Breusch-Pagan test
+
+    data:  model_best
+    BP = 5.9545, df = 3, p-value = 0.1138
+:::
+
+::: {.output .display_data}
+
+    	Shapiro-Wilk normality test
+
+    data:  model_best$residuals
+    W = 0.9808, p-value = 0.000278
+:::
+:::
+
+::: {.cell .code execution_count="23" colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":723}" id="b3voYvboqtN6" outputId="f8f0b813-5902-4039-8767-8c16ab4339be"}
+``` python
+# Predict on the test set
+predictions <- predict(model_best, newdata = testData)
+
+# Compare predictions with actual values
+results <- data.frame(Actual = testData$Chance.of.Admit, Predicted = predictions)
+head(results)
+
+ggplot(results, aes(x = Actual, y = Predicted)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(title = "Actual vs Predicted Chance of Admit", x = "Actual", y = "Predicted") +
+  theme_minimal()
+```
+
+::: {.output .display_data}
+
+A data.frame: 6 × 2
+
+| <!--/--> | Actual &lt;dbl&gt; | Predicted &lt;dbl&gt; |
+|---|---|---|
+| 8 | 0.68 | 0.3825418 |
+| 9 | 0.50 | 0.2263598 |
+| 10 | 0.45 | 0.4526442 |
+| 22 | 0.70 | 0.5026594 |
+| 24 | 0.95 | 0.8441240 |
+| 27 | 0.76 | 0.5079852 |
+:::
+
+::: {.output .stream .stderr}
+    `geom_smooth()` using formula = 'y ~ x'
+:::
+
+::: {.output .display_data}
+![](vertopal_dd8673d3bf9c47689c155e4888b2c597/b3d443f5198d27bccd3ddd14a0b33fdde5670920.png){height="420"
+width="420"}
+:::
+:::
+
+::: {.cell .code execution_count="26" colab="{\"base_uri\":\"https://localhost:8080/\"}" id="Td5rEbX3GWyS" outputId="64a6973f-258b-4257-98b8-0866317c0c5d"}
+``` python
+
+predictions <- predict(model_best, newdata = testData)
+
+# reverse the transformation of Box-Cox with lambda
+if (best_lam_new!= 0) {
+  predictions <- predictions^(1/best_lam_new)
+} else {
+  predictions <- exp(predictions)
+}
+
+
+mae <- mean(abs(predictions - testData$Chance.of.Admit))
+mse <- mean((predictions - testData$Chance.of.Admit)^2)
+rmse <- sqrt(mse)
+
+# R-squared
+sse <- sum((predictions - testData$Chance.of.Admit)^2)  # Sum of Squared Errors
+sst <- sum((mean(trainData$Chance.of.Admit) - testData$Chance.of.Admit)^2)  # Total Sum of Squares
+r_squared <- 1 - (sse / sst)
+
+cat("Mean Absolute Error (MAE):", mae, "\n")
+cat("Mean Squared Error (MSE):", mse, "\n")
+cat("Root Mean Squared Error (RMSE):", rmse, "\n")
+cat("R-squared (R²):", r_squared, "\n")
+```
+
+::: {.output .stream .stdout}
+    Mean Absolute Error (MAE): 0.06441571 
+    Mean Squared Error (MSE): 0.007307844 
+    Root Mean Squared Error (RMSE): 0.08548593 
+    R-squared (R²): 0.6800397 
+:::
+:::
+
+::: {.cell .code execution_count="27" colab="{\"base_uri\":\"https://localhost:8080/\",\"height\":1000}" id="gy2Z8pHSIjC8" outputId="26cd95fc-4aee-45ca-d1d3-abdac24303e1"}
+``` python
+library(ggplot2)
+library(broom)
+
+
+model_diagnostics <- augment(model_best)
+
+# Residuals vs Fitted
+ggplot(model_diagnostics, aes(.fitted, .resid)) +
+  geom_point() +
+  geom_hline(yintercept = 0, col = "red") +
+  labs(x = "Fitted values", y = "Residuals", title = "Residuals vs Fitted")
+
+# Q-Q Plot
+ggplot(model_diagnostics, aes(sample = .resid)) +
+  geom_qq() +
+  geom_qq_line(col = "red") +
+  labs(title = "Normal Q-Q")
+
+# Scale-Location
+ggplot(model_diagnostics, aes(.fitted, sqrt(abs(.std.resid)))) +
+  geom_point() +
+  geom_smooth(se = FALSE) +
+  labs(x = "Fitted values", y = "Square Root of |Standardized Residuals|", title = "Scale-Location")
+
+# Residuals vs Leverage
+ggplot(model_diagnostics, aes(.hat, .resid)) +
+  geom_point() +
+  geom_hline(yintercept = 0, col = "red") +
+  labs(x = "Leverage", y = "Residuals", title = "Residuals vs Leverage")
+```
+
+::: {.output .stream .stderr}
+    Warning message:
+    “'newdata' had 320 rows but variables found have 400 rows”
+:::
+
+::: {.output .display_data}
+![](vertopal_dd8673d3bf9c47689c155e4888b2c597/eafa53fe9f5f8f65ba1636a75a8b201b89f99847.png){height="420"
+width="420"}
+:::
+
+::: {.output .stream .stderr}
+    `geom_smooth()` using method = 'loess' and formula = 'y ~ x'
+:::
+
+::: {.output .display_data}
+![](vertopal_dd8673d3bf9c47689c155e4888b2c597/76ae5ec6099d53a4ac8a2c5b9336bab50c4b6236.png){height="420"
+width="420"}
+:::
+
+::: {.output .display_data}
+![](vertopal_dd8673d3bf9c47689c155e4888b2c597/459cc3b807d42682efede626ef45593700e5c59d.png){height="420"
+width="420"}
+:::
+
+::: {.output .display_data}
+![](vertopal_dd8673d3bf9c47689c155e4888b2c597/af8c0c478cd74b34133ff8dc74f8a7648dbd98ef.png){height="420"
+width="420"}
+:::
+:::
